@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">ImNotADeveloper</string>
+
+    <string name="hide_developer_mode">Hide developer mode</string>
+    <string name="hide_usb_debug">Hide usb debug</string>
+    <string name="hide_wireless_debug">Hide wireless debug</string>
+
+    <string name="test">Test</string>
+
+    <string name="sp_is_not_available">SharedPreferences is not available</string>
+</resources>
