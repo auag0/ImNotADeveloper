@@ -102,13 +102,6 @@ class MainActivity : Activity() {
         }
     }
 
-    @SuppressLint("PrivateApi")
-    private fun getProp(key: String): String? {
-        val systemProperties = Class.forName("android.os.SystemProperties")
-        return systemProperties.getDeclaredMethod("get", String::class.java, String::class.java)
-            .invoke(null, key, null) as String?
-    }
-
     private fun Float.dpToPx(): Int {
         return TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
