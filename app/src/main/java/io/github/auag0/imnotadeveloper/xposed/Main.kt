@@ -1,6 +1,7 @@
 package io.github.auag0.imnotadeveloper.xposed
 
 import de.robv.android.xposed.IXposedHookLoadPackage
+import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XC_MethodReplacement
 import de.robv.android.xposed.XSharedPreferences
@@ -9,17 +10,86 @@ import de.robv.android.xposed.XposedBridge.hookAllMethods
 import de.robv.android.xposed.XposedHelpers.findClass
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import io.github.auag0.imnotadeveloper.BuildConfig
+import io.github.auag0.imnotadeveloper.common.Logger.logD
+import io.github.auag0.imnotadeveloper.common.Logger.logE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEVELOPER_MODE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_USB_DEBUG
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_WIRELESS_DEBUG
+import io.github.auag0.imnotadeveloper.common.PropKeys
 import io.github.auag0.imnotadeveloper.common.PropKeys.ADB_ENABLED
 import io.github.auag0.imnotadeveloper.common.PropKeys.ADB_WIFI_ENABLED
 import io.github.auag0.imnotadeveloper.common.PropKeys.DEVELOPMENT_SETTINGS_ENABLED
+import java.lang.reflect.Method
 
 class Main : IXposedHookLoadPackage {
     private val prefs = XSharedPreferences(BuildConfig.APPLICATION_ID)
+
+    val propOverrides = mapOf(
+        PropKeys.SYS_USB_FFS_READY to "0",
+        PropKeys.SYS_USB_CONFIG to "mtp",
+        PropKeys.PERSIST_SYS_USB_CONFIG to "mtp",
+        PropKeys.SYS_USB_STATE to "mtp",
+        PropKeys.INIT_SVC_ADBD to "stopped"
+    )
+
     override fun handleLoadPackage(param: LoadPackageParam) {
         hookSettingsMethods(param.classLoader)
+        hookSystemPropertiesMethods(param.classLoader)
+        hookProcessMethods(param.classLoader)
+    }
+
+    private fun hookProcessMethods(classLoader: ClassLoader) {
+        val processImpl = findClass("java.lang.ProcessImpl", classLoader)
+        hookAllMethods(processImpl, "start", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) {
+                hookedLog(param)
+                val cmdarray = (param.args[0] as Array<*>).filterIsInstance<String>()
+                val firstCmd = cmdarray.getOrNull(0)
+                val secondCmd = cmdarray.getOrNull(1)
+                if (firstCmd == "getprop" && propOverrides.containsKey(secondCmd)) {
+                    val writableCmdArray = ArrayList(cmdarray)
+                    writableCmdArray[1] = "Dummy${System.currentTimeMillis()}"
+                    val a: Array<String> = writableCmdArray.toTypedArray()
+                    param.args[0] = a
+                }
+            }
+        })
+    }
+
+    private fun hookSystemPropertiesMethods(classLoader: ClassLoader) {
+        val methods = arrayOf(
+            "native_get",
+            "native_get_int",
+            "native_get_long",
+            "native_get_boolean",
+        )
+        val systemProperties = findClass("android.os.SystemProperties", classLoader)
+        methods.forEach { methodName ->
+            hookAllMethods(systemProperties, methodName, object : XC_MethodReplacement() {
+                override fun replaceHookedMethod(param: MethodHookParam): Any? {
+                    hookedLog(param)
+                    val key = param.args[0] as String
+                    val method = param.method as Method
+
+                    val value = propOverrides[key]
+                    if (value != null) {
+                        return try {
+                            when (method.returnType) {
+                                String::class.java -> value
+                                Int::class.java -> value.toInt()
+                                Long::class.java -> value.toLong()
+                                Boolean::class.java -> value.toBoolean()
+                                else -> param.invokeOriginalMethod()
+                            }
+                        } catch (e: NumberFormatException) {
+                            logE(e.message)
+                        }
+                    }
+
+                    return param.invokeOriginalMethod()
+                }
+            })
+        }
     }
 
     private fun hookSettingsMethods(classLoader: ClassLoader) {
