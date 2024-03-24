@@ -12,6 +12,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import io.github.auag0.imnotadeveloper.BuildConfig
 import io.github.auag0.imnotadeveloper.common.Logger.logD
 import io.github.auag0.imnotadeveloper.common.Logger.logE
+import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEBUG_PROPERTIES
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEVELOPER_MODE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_USB_DEBUG
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_WIRELESS_DEBUG
@@ -47,10 +48,13 @@ class Main : IXposedHookLoadPackage {
                 val firstCmd = cmdarray.getOrNull(0)
                 val secondCmd = cmdarray.getOrNull(1)
                 if (firstCmd == "getprop" && propOverrides.containsKey(secondCmd)) {
-                    val writableCmdArray = ArrayList(cmdarray)
-                    writableCmdArray[1] = "Dummy${System.currentTimeMillis()}"
-                    val a: Array<String> = writableCmdArray.toTypedArray()
-                    param.args[0] = a
+                    prefs.reload()
+                    if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES, true)) {
+                        val writableCmdArray = ArrayList(cmdarray)
+                        writableCmdArray[1] = "Dummy${System.currentTimeMillis()}"
+                        val a: Array<String> = writableCmdArray.toTypedArray()
+                        param.args[0] = a
+                    }
                 }
             }
         })
@@ -73,16 +77,19 @@ class Main : IXposedHookLoadPackage {
 
                     val value = propOverrides[key]
                     if (value != null) {
-                        return try {
-                            when (method.returnType) {
-                                String::class.java -> value
-                                Int::class.java -> value.toInt()
-                                Long::class.java -> value.toLong()
-                                Boolean::class.java -> value.toBoolean()
-                                else -> param.invokeOriginalMethod()
+                        prefs.reload()
+                        if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES, true)) {
+                            return try {
+                                when (method.returnType) {
+                                    String::class.java -> value
+                                    Int::class.java -> value.toInt()
+                                    Long::class.java -> value.toLong()
+                                    Boolean::class.java -> value.toBoolean()
+                                    else -> param.invokeOriginalMethod()
+                                }
+                            } catch (e: NumberFormatException) {
+                                logE(e.message)
                             }
-                        } catch (e: NumberFormatException) {
-                            logE(e.message)
                         }
                     }
 

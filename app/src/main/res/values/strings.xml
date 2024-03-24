@@ -4,6 +4,7 @@
     <string name="hide_developer_mode">Hide developer mode</string>
     <string name="hide_usb_debug">Hide usb debug</string>
     <string name="hide_wireless_debug">Hide wireless debug</string>
+    <string name="hide_debug_properties">Hide debug properties</string>
 
     <string name="test">Test</string>
 
