@@ -33,6 +33,7 @@ class Main : IXposedHookLoadPackage {
             val clazz = findClass(it, classLoader)
             hookAllMethods(clazz, "getStringForUser", object : XC_MethodReplacement() {
                 override fun replaceHookedMethod(param: MethodHookParam): Any? {
+                    hookedLog(param)
                     val name: String? = param.args[1] as? String?
                     return when (name) {
                         DEVELOPMENT_SETTINGS_ENABLED -> {
@@ -54,6 +55,33 @@ class Main : IXposedHookLoadPackage {
                     } ?: param.invokeOriginalMethod()
                 }
             })
+        }
+    }
+
+    private fun hookedLog(param: MethodHookParam) {
+        val method = param.method as Method
+        val message = buildString {
+            appendLine("Hooked ${method.declaringClass.name}$${param.method.name} -> ${method.returnType.name}")
+            param.args.forEachIndexed { index, any: Any? ->
+                appendLine("    $index:${any.string()}")
+            }
+        }
+        logD(message)
+    }
+
+    private fun Any?.string(): String {
+        return when (this) {
+            is List<*> -> joinToString(prefix = "[", postfix = "]")
+            is Array<*> -> joinToString(prefix = "[", postfix = "]")
+            else -> toString()
+        }
+    }
+
+    private fun String.toBoolean(): Boolean {
+        return when {
+            equals("true", true) || equals("1", true) -> true
+            equals("false", true) || equals("0", true) -> false
+            else -> throw NumberFormatException(this)
         }
     }
 
