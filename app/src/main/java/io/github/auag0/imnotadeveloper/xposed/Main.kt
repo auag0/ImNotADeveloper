@@ -85,6 +85,9 @@ class Main : IXposedHookLoadPackage {
         methods.forEach { methodName ->
             hookAllMethods(systemProperties, methodName, object : XC_MethodReplacement() {
                 override fun replaceHookedMethod(param: MethodHookParam): Any? {
+                    if (param.args[0] !is String) {
+                        return param.invokeOriginalMethod()
+                    }
                     hookedLog(param)
                     val key = param.args[0] as String
                     val method = param.method as Method
