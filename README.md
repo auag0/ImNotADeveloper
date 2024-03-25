@@ -1,7 +1,10 @@
-
 # ImNotADeveloper
 This is an Xposed module that hides things like developer mode and USB debugging status  
 開発者モードやUsbデバッグの状態を隠すXposedモジュールです。
+
+## How to open settings
+you can open module settings from LSPosed or open module settings from app info screen  
+LSPosedでモジュール設定を押すか、アプリ情報画面の「アプリ内の設定」からモジュールの設定を開く事が出来ます
 
 ## hooked methods
 - **android.provider.Settings**
