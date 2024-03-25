@@ -7,7 +7,5 @@
     <string name="hide_debug_properties">Hide debug properties</string>
     <string name="hide_debug_properties_in_native">Hide debug properties in native</string>
 
-    <string name="test">Test</string>
-
     <string name="sp_is_not_available">SharedPreferences is not available</string>
 </resources>
