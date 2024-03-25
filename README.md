@@ -19,8 +19,8 @@ This is an Xposed module that hides things like developer mode and USB debugging
 - **java.lang.ProcessImpl**
   - start()
 - **native**
-  - __system_property_get
-  - __system_property_find
+  - __system_property_get()
+  - __system_property_find()
 
 ## banned keys ([latest](/app/src/main/java/io/github/auag0/imnotadeveloper/common/PropKeys.kt))
 - **property keys**
