@@ -13,6 +13,7 @@ import io.github.auag0.imnotadeveloper.BuildConfig
 import io.github.auag0.imnotadeveloper.common.Logger.logD
 import io.github.auag0.imnotadeveloper.common.Logger.logE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEBUG_PROPERTIES
+import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEBUG_PROPERTIES_IN_NATIVE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEVELOPER_MODE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_USB_DEBUG
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_WIRELESS_DEBUG
@@ -37,6 +38,19 @@ class Main : IXposedHookLoadPackage {
         hookSettingsMethods(param.classLoader)
         hookSystemPropertiesMethods(param.classLoader)
         hookProcessMethods(param.classLoader)
+        hookNativeMethods(param.classLoader)
+    }
+
+    private fun hookNativeMethods(classLoader: ClassLoader) {
+        prefs.reload()
+        if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES_IN_NATIVE, true)) {
+            try {
+                System.loadLibrary("ImNotADeveloper")
+                NativeFun.setProps(propOverrides)
+            } catch (e: Exception) {
+                logE(e.message)
+            }
+        }
     }
 
     private fun hookProcessMethods(classLoader: ClassLoader) {

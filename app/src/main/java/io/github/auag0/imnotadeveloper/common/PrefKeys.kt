@@ -5,4 +5,5 @@ object PrefKeys {
     const val HIDE_USB_DEBUG = "hide_usb_debug"
     const val HIDE_WIRELESS_DEBUG = "hide_wireless_debug"
     const val HIDE_DEBUG_PROPERTIES = "hide_debug_properties"
+    const val HIDE_DEBUG_PROPERTIES_IN_NATIVE = "hide_debug_properties_in_native"
 }

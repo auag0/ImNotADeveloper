@@ -17,6 +17,7 @@ import android.widget.Toast
 import io.github.auag0.imnotadeveloper.BuildConfig
 import io.github.auag0.imnotadeveloper.R
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEBUG_PROPERTIES
+import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEBUG_PROPERTIES_IN_NATIVE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_DEVELOPER_MODE
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_USB_DEBUG
 import io.github.auag0.imnotadeveloper.common.PrefKeys.HIDE_WIRELESS_DEBUG
@@ -30,7 +31,8 @@ class MainActivity : Activity() {
             Option(getString(R.string.hide_developer_mode), HIDE_DEVELOPER_MODE, true),
             Option(getString(R.string.hide_usb_debug), HIDE_USB_DEBUG, true),
             Option(getString(R.string.hide_wireless_debug), HIDE_WIRELESS_DEBUG, true),
-            Option(getString(R.string.hide_debug_properties), HIDE_DEBUG_PROPERTIES, true)
+            Option(getString(R.string.hide_debug_properties), HIDE_DEBUG_PROPERTIES, true),
+            Option(getString(R.string.hide_debug_properties_in_native), HIDE_DEBUG_PROPERTIES_IN_NATIVE, true),
         )
     }
 
