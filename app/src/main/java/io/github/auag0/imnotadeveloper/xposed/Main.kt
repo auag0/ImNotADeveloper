@@ -54,8 +54,7 @@ class Main : IXposedHookLoadPackage {
     }
 
     private fun hookProcessMethods(classLoader: ClassLoader) {
-        val processImpl = findClass("java.lang.ProcessImpl", classLoader)
-        hookAllMethods(processImpl, "start", object : XC_MethodHook() {
+        val hookCmd = object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
                 hookedLog(param)
                 val cmdarray = (param.args[0] as Array<*>).filterIsInstance<String>()
@@ -71,7 +70,12 @@ class Main : IXposedHookLoadPackage {
                     }
                 }
             }
-        })
+        }
+        val processImpl = findClass("java.lang.ProcessImpl", classLoader)
+        hookAllMethods(processImpl, "start", hookCmd)
+
+        val processManager = findClass("java.lang.ProcessManager", classLoader)
+        hookAllMethods(processManager, "exec", hookCmd)
     }
 
     private fun hookSystemPropertiesMethods(classLoader: ClassLoader) {
