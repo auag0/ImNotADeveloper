@@ -38,10 +38,10 @@ class Main : IXposedHookLoadPackage {
         hookSettingsMethods(param.classLoader)
         hookSystemPropertiesMethods(param.classLoader)
         hookProcessMethods(param.classLoader)
-        hookNativeMethods(param.classLoader)
+        hookNativeMethods()
     }
 
-    private fun hookNativeMethods(classLoader: ClassLoader) {
+    private fun hookNativeMethods() {
         prefs.reload()
         if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES_IN_NATIVE, true)) {
             try {
