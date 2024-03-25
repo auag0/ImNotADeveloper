@@ -42,18 +42,17 @@ class Main : IXposedHookLoadPackage {
     }
 
     private fun hookNativeMethods() {
-        prefs.reload()
-        if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES_IN_NATIVE, true)) {
-            try {
-                System.loadLibrary("ImNotADeveloper")
-                NativeFun.setProps(propOverrides)
-            } catch (e: Exception) {
-                logE(e.message)
-            }
+        if (!getSPBool(HIDE_DEBUG_PROPERTIES_IN_NATIVE, true)) return
+        try {
+            System.loadLibrary("ImNotADeveloper")
+            NativeFun.setProps(propOverrides)
+        } catch (e: Exception) {
+            logE(e.message)
         }
     }
 
     private fun hookProcessMethods(classLoader: ClassLoader) {
+        if (!getSPBool(HIDE_DEBUG_PROPERTIES, true)) return
         val hookCmd = object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
                 hookedLog(param)
@@ -61,13 +60,10 @@ class Main : IXposedHookLoadPackage {
                 val firstCmd = cmdarray.getOrNull(0)
                 val secondCmd = cmdarray.getOrNull(1)
                 if (firstCmd == "getprop" && propOverrides.containsKey(secondCmd)) {
-                    prefs.reload()
-                    if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES, true)) {
-                        val writableCmdArray = ArrayList(cmdarray)
-                        writableCmdArray[1] = "Dummy${System.currentTimeMillis()}"
-                        val a: Array<String> = writableCmdArray.toTypedArray()
-                        param.args[0] = a
-                    }
+                    val writableCmdArray = ArrayList(cmdarray)
+                    writableCmdArray[1] = "Dummy${System.currentTimeMillis()}"
+                    val a: Array<String> = writableCmdArray.toTypedArray()
+                    param.args[0] = a
                 }
             }
         }
@@ -79,38 +75,34 @@ class Main : IXposedHookLoadPackage {
     }
 
     private fun hookSystemPropertiesMethods(classLoader: ClassLoader) {
+        if (!getSPBool(HIDE_DEBUG_PROPERTIES, true)) return
         val methods = arrayOf(
             "native_get",
             "native_get_int",
             "native_get_long",
-            "native_get_boolean",
+            "native_get_boolean"
         )
         val systemProperties = findClass("android.os.SystemProperties", classLoader)
         methods.forEach { methodName ->
             hookAllMethods(systemProperties, methodName, object : XC_MethodReplacement() {
                 override fun replaceHookedMethod(param: MethodHookParam): Any? {
-                    if (param.args[0] !is String) {
-                        return param.invokeOriginalMethod()
-                    }
+                    if (param.args[0] !is String) return param.invokeOriginalMethod()
                     hookedLog(param)
                     val key = param.args[0] as String
                     val method = param.method as Method
 
                     val value = propOverrides[key]
                     if (value != null) {
-                        prefs.reload()
-                        if (prefs.getBoolean(HIDE_DEBUG_PROPERTIES, true)) {
-                            return try {
-                                when (method.returnType) {
-                                    String::class.java -> value
-                                    Int::class.java -> value.toInt()
-                                    Long::class.java -> value.toLong()
-                                    Boolean::class.java -> value.toBoolean()
-                                    else -> param.invokeOriginalMethod()
-                                }
-                            } catch (e: NumberFormatException) {
-                                logE(e.message)
+                        return try {
+                            when (method.returnType) {
+                                String::class.java -> value
+                                Int::class.java -> value.toInt()
+                                Long::class.java -> value.toLong()
+                                Boolean::class.java -> value.toBoolean()
+                                else -> param.invokeOriginalMethod()
                             }
+                        } catch (e: NumberFormatException) {
+                            logE(e.message)
                         }
                     }
 
@@ -121,6 +113,11 @@ class Main : IXposedHookLoadPackage {
     }
 
     private fun hookSettingsMethods(classLoader: ClassLoader) {
+        val bannedKeys = ArrayList<String>()
+        if (getSPBool(HIDE_DEVELOPER_MODE, true)) bannedKeys.add(DEVELOPMENT_SETTINGS_ENABLED)
+        if (getSPBool(HIDE_USB_DEBUG, true)) bannedKeys.add(ADB_ENABLED)
+        if (getSPBool(HIDE_WIRELESS_DEBUG, true)) bannedKeys.add(ADB_WIFI_ENABLED)
+        if (bannedKeys.isEmpty()) return
         val settingsClassNames = arrayOf(
             "android.provider.Settings.Secure",
             "android.provider.Settings.System",
@@ -132,25 +129,12 @@ class Main : IXposedHookLoadPackage {
             hookAllMethods(clazz, "getStringForUser", object : XC_MethodReplacement() {
                 override fun replaceHookedMethod(param: MethodHookParam): Any? {
                     hookedLog(param)
-                    val name: String? = param.args[1] as? String?
-                    return when (name) {
-                        DEVELOPMENT_SETTINGS_ENABLED -> {
-                            prefs.reload()
-                            if (prefs.getBoolean(HIDE_DEVELOPER_MODE, true)) "0" else null
-                        }
-
-                        ADB_ENABLED -> {
-                            prefs.reload()
-                            if (prefs.getBoolean(HIDE_USB_DEBUG, true)) "0" else null
-                        }
-
-                        ADB_WIFI_ENABLED -> {
-                            prefs.reload()
-                            if (prefs.getBoolean(HIDE_WIRELESS_DEBUG, true)) "0" else null
-                        }
-
-                        else -> null
-                    } ?: param.invokeOriginalMethod()
+                    val name = param.args[1] as? String?
+                    return if (bannedKeys.contains(name)) {
+                        "0"
+                    } else {
+                        param.invokeOriginalMethod()
+                    }
                 }
             })
         }
@@ -185,5 +169,10 @@ class Main : IXposedHookLoadPackage {
 
     private fun MethodHookParam.invokeOriginalMethod(): Any? {
         return XposedBridge.invokeOriginalMethod(method, thisObject, args)
+    }
+
+    private fun getSPBool(key: String, def: Boolean): Boolean {
+        prefs.reload()
+        return prefs.getBoolean(key, def)
     }
 }
