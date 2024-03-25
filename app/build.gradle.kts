@@ -18,7 +18,14 @@ android {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
     }
-
+    signingConfigs {
+        create("release") {
+            storeFile = File(projectDir, "release-keystore.jks")
+            storePassword = System.getenv("storePassword")
+            keyAlias = System.getenv("keyAlias")
+            keyPassword = System.getenv("keyPassword")
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -27,7 +34,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
