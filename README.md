@@ -39,3 +39,4 @@ LSPosedでモジュール設定を押すか、アプリ情報画面の「アプ�
 
  ## super thanks (reference)
  - [**xfqwdsj/IAmNotADeveloper**](https://github.com/xfqwdsj/IAmNotADeveloper)
+ - [**rushiranpise/Hide-Debugging**](https://github.com/rushiranpise/Hide-Debugging)
