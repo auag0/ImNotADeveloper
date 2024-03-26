@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include "LSPosed.h"
-#include "Dobby/include/dobby.h"
 #include <sys/system_properties.h>
 #include "PropKeys.h"
 #include "Logger.h"
@@ -33,17 +32,10 @@ void *hooked___system_property_find(const char *name) {
 extern "C" [[gnu::visibility("default")]] [[gnu::used]]
 NativeOnModuleLoaded native_init(const NativeAPIEntries *entries) {
     LOGD("native_init");
-    void *target;
-    int fail = 0;
-    target = DobbySymbolResolver("libc.so", "__system_property_get");
-    fail += DobbyHook(target, (void *) hooked___system_property_get,
-                      (void **) &orig___system_property_get);
-
-    target = DobbySymbolResolver("libc.so", "__system_property_find");
-    fail += DobbyHook(target, (void *) hooked___system_property_find,
-                      (void **) &orig___system_property_find);
-    if (fail > 0) {
-        LOGE("hook failures: %d", fail);
-    }
+    HookFunType hookFunc = entries->hook_func;
+    hookFunc((void *) __system_property_get, (void *) hooked___system_property_get,
+             (void **) &orig___system_property_get);
+    hookFunc((void *) __system_property_find, (void *) hooked___system_property_find,
+             (void **) &orig___system_property_find);
     return [](const char *name, void *handle) {};
 }
